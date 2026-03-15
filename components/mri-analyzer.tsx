@@ -48,8 +48,8 @@ function formatFileSize(bytes: number): string {
 }
 
 function isValidFile(fileName: string): boolean {
-  const ext = fileName.toLowerCase().slice(fileName.lastIndexOf("."))
-  return SUPPORTED_EXTENSIONS.includes(ext)
+  const lowerName = fileName.toLowerCase();
+  return SUPPORTED_EXTENSIONS.some(ext => lowerName.endsWith(ext));
 }
 
 export function MRIAnalyzer() {
