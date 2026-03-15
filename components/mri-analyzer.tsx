@@ -31,7 +31,7 @@ interface AnalysisResult {
   confidence: number
 }
 
-const SUPPORTED_EXTENSIONS = [".nii", ".dcm"]
+const SUPPORTED_EXTENSIONS = [".nii", ".nii.gz"]
 
 const PROCESSING_STEPS = [
   "Initializing analysis...",
