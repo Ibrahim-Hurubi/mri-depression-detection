@@ -27,7 +27,7 @@ interface FileInfo {
 }
 
 interface AnalysisResult {
-  prediction: "Normal" | "Depression Signs Detected"
+  prediction: "Normal" | "Depression Signs Detected" | string
   confidence: number
 }
 
@@ -91,7 +91,7 @@ export function MRIAnalyzer() {
     setApiError(null)
   }
 
-  // Production-ready async function for API integration
+  // The Real API Integration
   const handleAnalyze = async () => {
     if (!fileInfo?.file) return
 
@@ -100,18 +100,16 @@ export function MRIAnalyzer() {
     setApiError(null)
     setProgress(0)
 
-    // Prepare FormData for API
+    // Prepare FormData for API (Changed 'mri_file' to 'file' to match FastAPI)
     const formData = new FormData()
-    formData.append("mri_file", fileInfo.file)
-    formData.append("filename", fileInfo.name)
+    formData.append("file", fileInfo.file)
 
     try {
-      // Simulate processing steps for UX feedback
+      // Simulate processing steps for UX feedback (Kept for nice animation)
       for (let i = 0; i < PROCESSING_STEPS.length; i++) {
         setProcessingStep(PROCESSING_STEPS[i])
         const targetProgress = ((i + 1) / PROCESSING_STEPS.length) * 100
         
-        // Smooth progress animation
         await new Promise<void>((resolve) => {
           const duration = 500
           const startProgress = (i / PROCESSING_STEPS.length) * 100
@@ -129,41 +127,38 @@ export function MRIAnalyzer() {
         })
       }
 
-      // TODO: Replace with your actual project API endpoint URL
-      const API_ENDPOINT = "/api/analyze-mri"
+      // Your Local Backend via Ngrok
+      const API_ENDPOINT = "https://undepressive-esmeralda-frolicsomely.ngrok-free.app/api/analyze"
       
       const response = await fetch(API_ENDPOINT, {
         method: "POST",
         body: formData,
+        headers: {
+          // This prevents ngrok from showing a warning page
+          "ngrok-skip-browser-warning": "true",
+        }
       })
 
       if (!response.ok) {
         throw new Error(`Analysis failed: ${response.statusText}`)
       }
 
+      // 1. Receive data from your Python backend
       const data = await response.json()
       
+      // 2. Map backend response to Frontend
       setResult({
-        prediction: data.prediction || "Normal",
+        prediction: data.diagnosis || "Normal", 
         confidence: data.confidence || 0,
       })
+      
       setState("results")
 
     } catch (err) {
-      // For demo/development: show mock results if API is not available
-      console.log("[v0] API not available, using mock results for demo")
-      
-      // Mock result for development/demo purposes
-      const mockPrediction = Math.random() > 0.5
-      setResult({
-        prediction: mockPrediction ? "Depression Signs Detected" : "Normal",
-        confidence: 75 + Math.random() * 20,
-      })
-      setState("results")
-      
-      // Uncomment below to show actual API errors in production:
-      // setApiError(err instanceof Error ? err.message : "An error occurred during analysis")
-      // setState("file-loaded")
+      console.error("API Error:", err)
+      // Display actual error if backend is unreachable
+      setApiError(err instanceof Error ? err.message : "Failed to connect to backend. Please ensure Ngrok and local server are running.")
+      setState("file-loaded") // Send user back to retry
       
     } finally {
       setIsProcessing(false)
@@ -383,7 +378,7 @@ export function MRIAnalyzer() {
         </Alert>
       )}
 
-      {/* Action buttons - immediately below upload zone */}
+      {/* Action buttons */}
       {state === "upload" && (
         <Button className="w-full" disabled>
           <Brain className="w-4 h-4 mr-2" />
