@@ -3,10 +3,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  transpilePackages: ["lucide-react"], 
+  transpilePackages: ["lucide-react"],
 };
 
 export default nextConfig;
