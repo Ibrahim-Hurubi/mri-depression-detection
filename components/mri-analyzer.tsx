@@ -199,7 +199,7 @@ export function MRIAnalyzer() {
                 Drag & drop or click to browse
               </p>
               <div className="flex items-center gap-2">
-                {[".nii", ".dcm"].map((ext) => (
+                {[".nii", ".nii.gz"].map((ext) => (
                   <span
                     key={ext}
                     className="px-2 py-0.5 rounded bg-muted text-muted-foreground text-xs"
