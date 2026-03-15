@@ -128,7 +128,7 @@ export function MRIAnalyzer() {
       }
 
       // Your Local Backend via Ngrok
-      const API_ENDPOINT = "https://undepressive-esmeralda-frolicsomely.ngrok-free.app/api/analyze"
+      const API_ENDPOINT = "https://undepressive-esmeralda-frolicsomely.ngrok-free.dev/api/analyze"
       
       const response = await fetch(API_ENDPOINT, {
         method: "POST",
