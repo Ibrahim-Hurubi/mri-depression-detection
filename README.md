@@ -15,7 +15,7 @@ This project is a web-based application designed to assist in the detection of d
 - **Deployment**: Vercel
 
 ## Live Demo
-🌍 mri-depression-detection.vercel.app
+🌍 https://mri-depression-detection-19wb4r5ao-ibrahim-hurubis-projects.vercel.app/
 
 ## How to Run Locally
 1. Clone the repository:
