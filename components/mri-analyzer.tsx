@@ -39,8 +39,9 @@ const PROCESSING_STEPS = [
   "Initializing analysis...",
   "Preprocessing MRI data...",
   "Extracting features...",
-  "Running deep learning model...",
-  "Generating results...",
+  "Running Fahad's Deep Learning Model...",
+  "Generating Grad-CAM Heatmap...",
+  "Finalizing results...",
 ]
 
 function formatFileSize(bytes: number): string {
@@ -62,11 +63,9 @@ export function MRIAnalyzer() {
   const [processingStep, setProcessingStep] = useState("")
   const [result, setResult] = useState<AnalysisResult | null>(null)
   
-  // API integration states
   const [isProcessing, setIsProcessing] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
 
-  // 3D Viewer Refs
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const nvRef = useRef<any>(null)
 
@@ -100,7 +99,6 @@ export function MRIAnalyzer() {
     }
   }
 
-  // دالة تغيير نوع العرض الطبي
   const changeView = (type: number) => {
     if (nvRef.current) {
       nvRef.current.setSliceType(type)
@@ -134,7 +132,6 @@ export function MRIAnalyzer() {
             name: fileInfo.name
           }]);
 
-          // البداية دائماً كـ 3D
           nv.setSliceType(nv.sliceTypeRender);
           
         } catch (err) {
@@ -167,7 +164,7 @@ export function MRIAnalyzer() {
         const targetProgress = ((i + 1) / PROCESSING_STEPS.length) * 100
         
         await new Promise<void>((resolve) => {
-          const duration = 500
+          const duration = 600
           const startProgress = (i / PROCESSING_STEPS.length) * 100
           const increment = (targetProgress - startProgress) / 10
           let step = 0
@@ -183,7 +180,6 @@ export function MRIAnalyzer() {
         })
       }
 
-      // تأكد أن الرابط هو رابط Ngrok الخاص بك
       const API_ENDPOINT = "https://undepressive-esmeralda-frolicsomely.ngrok-free.dev/api/analyze"
       
       const response = await fetch(API_ENDPOINT, {
@@ -204,6 +200,32 @@ export function MRIAnalyzer() {
         prediction: data.diagnosis || "Normal", 
         confidence: data.confidence || 0,
       })
+
+      if (data.heatmap && nvRef.current) {
+        try {
+          const byteCharacters = atob(data.heatmap);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: 'application/gzip' });
+          const heatmapUrl = URL.createObjectURL(blob);
+
+          // دمج الهيتماب الملون فوق صورة الدماغ
+          await nvRef.current.addVolumeFromUrl({
+            url: heatmapUrl,
+            colormap: 'red', // نقدر نغيره لـ 'hot' أو 'warm'
+            opacity: 0.5,    // شفافية 50% عشان تبان الأنسجة تحته
+          });
+          
+          // تغيير العرض تلقائياً للشرائح عشان الدكتور يشوف الهيتماب بوضوح
+          nvRef.current.setSliceType(nvRef.current.sliceTypeMultiplanar);
+
+        } catch (overlayErr) {
+          console.error("Failed to load heatmap overlay:", overlayErr);
+        }
+      }
       
       setState("results")
 
@@ -275,13 +297,11 @@ export function MRIAnalyzer() {
           <div className="bg-black/95 relative aspect-video w-full flex items-center justify-center overflow-hidden border-b border-border/50">
             <canvas ref={canvasRef} className="w-full h-full outline-none cursor-grab active:cursor-grabbing" />
             
-            {/* الشارة العلوية */}
             <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10 pointer-events-none">
               <Layers className="w-4 h-4 text-white/70" />
               <span className="text-xs font-medium text-white/90">Clinical MRI Viewer</span>
             </div>
 
-            {/* لوحة التحكم (تغيير نوع العرض) */}
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/60 backdrop-blur-md p-1.5 rounded-full border border-white/10 z-10">
               <button onClick={() => changeView(4)} className="px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 rounded-full transition-colors">3D</button>
               <button onClick={() => changeView(3)} className="px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 rounded-full transition-colors">Multiplanar</button>
