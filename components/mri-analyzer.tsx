@@ -201,6 +201,7 @@ export function MRIAnalyzer() {
         confidence: data.confidence || 0,
       })
 
+      // 🔥 إصلاح مشكلة الهيتماب 🔥
       if (data.heatmap && nvRef.current) {
         try {
           const byteCharacters = atob(data.heatmap);
@@ -209,17 +210,18 @@ export function MRIAnalyzer() {
             byteNumbers[i] = byteCharacters.charCodeAt(i);
           }
           const byteArray = new Uint8Array(byteNumbers);
-          const blob = new Blob([byteArray], { type: 'application/gzip' });
-          const heatmapUrl = URL.createObjectURL(blob);
+          
+          // السر هنا: إنشاء ملف حقيقي بامتداد .nii.gz عشان NiiVue تفهمه
+          const file = new File([byteArray], "heatmap.nii.gz", { type: 'application/octet-stream' });
+          const heatmapUrl = URL.createObjectURL(file);
 
-          // دمج الهيتماب الملون فوق صورة الدماغ
           await nvRef.current.addVolumeFromUrl({
             url: heatmapUrl,
-            colormap: 'red', // نقدر نغيره لـ 'hot' أو 'warm'
-            opacity: 0.5,    // شفافية 50% عشان تبان الأنسجة تحته
+            name: 'heatmap.nii.gz', // اسم صريح
+            colormap: 'red',        // اللون أحمر حراري
+            opacity: 0.6,           // شفافية 60%
           });
           
-          // تغيير العرض تلقائياً للشرائح عشان الدكتور يشوف الهيتماب بوضوح
           nvRef.current.setSliceType(nvRef.current.sliceTypeMultiplanar);
 
         } catch (overlayErr) {
@@ -231,7 +233,7 @@ export function MRIAnalyzer() {
 
     } catch (err) {
       console.error("API Error:", err)
-      setApiError(err instanceof Error ? err.message : "Failed to connect to backend. Please ensure Ngrok and local server are running.")
+      setApiError(err instanceof Error ? err.message : "Failed to connect to backend.")
       setState("file-loaded") 
       
     } finally {
@@ -401,7 +403,8 @@ export function MRIAnalyzer() {
           </CardHeader>
           <CardContent className="space-y-4 pt-5">
             <div className="flex items-center gap-5">
-              <div className="relative w-20 h-20">
+              {/* 🔥 إصلاح تداخل العناصر بالتصميم (shrink-0) 🔥 */}
+              <div className="relative w-20 h-20 shrink-0">
                 <svg
                   className="w-full h-full -rotate-90 drop-shadow-sm"
                   viewBox="0 0 100 100"
@@ -437,7 +440,7 @@ export function MRIAnalyzer() {
                   </span>
                 </div>
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">AI Confidence Score</p>
                 <p className="font-bold text-foreground text-lg">
                   {result.confidence >= 90
@@ -446,7 +449,7 @@ export function MRIAnalyzer() {
                     ? "Moderate"
                     : "Low"}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
+                <p className="text-xs text-muted-foreground mt-1">
                   Based on deep learning feature extraction.
                 </p>
               </div>
