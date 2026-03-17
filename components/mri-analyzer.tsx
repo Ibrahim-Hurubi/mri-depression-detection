@@ -94,20 +94,17 @@ export function MRIAnalyzer() {
     setState("upload")
     setError(null)
     setApiError(null)
-    // تنظيف مكتبة الـ 3D عند حذف الملف
     if (nvRef.current) {
       nvRef.current = null
     }
   }
 
-  // Effect لمكتبة العرض ثلاثي الأبعاد
   useEffect(() => {
     if ((state === "file-loaded" || state === "processing" || state === "results") && fileInfo?.file && canvasRef.current) {
       let isMounted = true;
 
       const initViewer = async () => {
         try {
-          // استيراد ديناميكي
           const { Niivue } = await import("@niivue/niivue");
           
           if (!isMounted || !canvasRef.current) return;
@@ -129,7 +126,8 @@ export function MRIAnalyzer() {
             name: fileInfo.name
           }]);
 
-          nv.setSliceType(nv.sliceTypeRender);
+          // تم التعديل هنا ليعرض 3 مقاطع احترافية (Multiplanar)
+          nv.setSliceType(nv.sliceTypeMultiplanar);
           
         } catch (err) {
           console.error("Error loading 3D viewer:", err);
