@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { useDropzone } from "react-dropzone"
 import {
   Upload,
@@ -11,6 +11,7 @@ import {
   Loader2,
   RefreshCcw,
   FileImage,
+  Maximize
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -64,6 +65,10 @@ export function MRIAnalyzer() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
 
+  // 3D Viewer Refs
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const nvRef = useRef<any>(null)
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setError(null)
     setApiError(null)
@@ -71,7 +76,7 @@ export function MRIAnalyzer() {
 
     const file = acceptedFiles[0]
     if (!isValidFile(file.name)) {
-      setError("Invalid format. Please upload medical MRI files (.nii or .dcm only)")
+      setError("Invalid format. Please upload medical MRI files (.nii or .nii.gz only)")
       return
     }
 
@@ -89,7 +94,55 @@ export function MRIAnalyzer() {
     setState("upload")
     setError(null)
     setApiError(null)
+    // تنظيف مكتبة الـ 3D عند حذف الملف
+    if (nvRef.current) {
+      nvRef.current = null
+    }
   }
+
+  // Effect لمكتبة العرض ثلاثي الأبعاد
+  useEffect(() => {
+    if ((state === "file-loaded" || state === "processing" || state === "results") && fileInfo?.file && canvasRef.current) {
+      let isMounted = true;
+
+      const initViewer = async () => {
+        try {
+          // استيراد ديناميكي
+          const { Niivue } = await import("@niivue/niivue");
+          
+          if (!isMounted || !canvasRef.current) return;
+          if (nvRef.current) return;
+
+          const nv = new Niivue({
+            dragAndDropEnabled: false,
+            backColor: [0.05, 0.05, 0.05, 1],
+            show3Dcrosshair: true,
+          });
+
+          nv.attachToCanvas(canvasRef.current);
+          nvRef.current = nv;
+
+          const url = URL.createObjectURL(fileInfo.file);
+          
+          await nv.loadVolumes([{
+            url: url,
+            name: fileInfo.name
+          }]);
+
+          nv.setSliceType(nv.sliceTypeRender);
+          
+        } catch (err) {
+          console.error("Error loading 3D viewer:", err);
+        }
+      };
+
+      initViewer();
+
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [state, fileInfo]);
 
   // The Real API Integration
   const handleAnalyze = async () => {
@@ -100,12 +153,12 @@ export function MRIAnalyzer() {
     setApiError(null)
     setProgress(0)
 
-    // Prepare FormData for API (Changed 'mri_file' to 'file' to match FastAPI)
+    // Prepare FormData for API
     const formData = new FormData()
     formData.append("file", fileInfo.file)
 
     try {
-      // Simulate processing steps for UX feedback (Kept for nice animation)
+      // Simulate processing steps for UX feedback
       for (let i = 0; i < PROCESSING_STEPS.length; i++) {
         setProcessingStep(PROCESSING_STEPS[i])
         const targetProgress = ((i + 1) / PROCESSING_STEPS.length) * 100
@@ -134,7 +187,6 @@ export function MRIAnalyzer() {
         method: "POST",
         body: formData,
         headers: {
-          // This prevents ngrok from showing a warning page
           "ngrok-skip-browser-warning": "true",
         }
       })
@@ -156,9 +208,8 @@ export function MRIAnalyzer() {
 
     } catch (err) {
       console.error("API Error:", err)
-      // Display actual error if backend is unreachable
       setApiError(err instanceof Error ? err.message : "Failed to connect to backend. Please ensure Ngrok and local server are running.")
-      setState("file-loaded") // Send user back to retry
+      setState("file-loaded") 
       
     } finally {
       setIsProcessing(false)
@@ -174,6 +225,9 @@ export function MRIAnalyzer() {
     setProcessingStep("")
     setResult(null)
     setIsProcessing(false)
+    if (nvRef.current) {
+      nvRef.current = null
+    }
   }
 
   return (
@@ -199,7 +253,7 @@ export function MRIAnalyzer() {
                 Drag & drop or click to browse
               </p>
               <div className="flex items-center gap-2">
-                {[".nii", ".nii.gz"].map((ext) => (
+                {SUPPORTED_EXTENSIONS.map((ext) => (
                   <span
                     key={ext}
                     className="px-2 py-0.5 rounded bg-muted text-muted-foreground text-xs"
@@ -214,17 +268,24 @@ export function MRIAnalyzer() {
         </Card>
       )}
 
-      {/* File Loaded State */}
-      {state === "file-loaded" && fileInfo && (
-        <Card className="border-success/30 bg-success/5">
-          <CardContent className="p-4">
+      {/* 3D Viewer State */}
+      {(state === "file-loaded" || state === "processing" || state === "results") && fileInfo && (
+        <Card className="overflow-hidden border-border/50">
+          <div className="bg-black/95 relative aspect-video w-full flex items-center justify-center overflow-hidden border-b border-border/50">
+            <canvas ref={canvasRef} className="w-full h-full outline-none cursor-grab active:cursor-grabbing" />
+            <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+              <Maximize className="w-4 h-4 text-white/70" />
+              <span className="text-xs font-medium text-white/90">Interactive 3D View</span>
+            </div>
+          </div>
+          <CardContent className="p-4 bg-muted/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
-                  <FileImage className="w-5 h-5 text-success" />
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <FileImage className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground text-sm">
+                  <p className="font-medium text-foreground text-sm truncate max-w-[200px] md:max-w-[300px]">
                     {fileInfo.name}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -232,15 +293,15 @@ export function MRIAnalyzer() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-success" />
+              {state === "file-loaded" && (
                 <button
                   onClick={removeFile}
                   className="p-2 rounded-lg hover:bg-destructive/10 transition-colors"
+                  title="Remove file"
                 >
                   <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
                 </button>
-              </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -260,7 +321,7 @@ export function MRIAnalyzer() {
 
               <div className="text-center w-full">
                 <p className="font-medium text-foreground text-sm mb-1">
-                  Analyzing...
+                  Analyzing Brain Scan...
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {processingStep}
@@ -280,33 +341,35 @@ export function MRIAnalyzer() {
 
       {/* Results State */}
       {state === "results" && result && (
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="border-primary/20 shadow-md">
+          <CardHeader className="pb-3 bg-primary/5 border-b border-primary/10">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Analysis Complete</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Brain className="w-5 h-5 text-primary" />
+                Analysis Complete
+              </CardTitle>
               <span
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
+                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold",
                   result.prediction === "Normal"
-                    ? "bg-success/10 text-success"
-                    : "bg-warning/10 text-warning"
+                    ? "bg-success/20 text-success-foreground"
+                    : "bg-destructive/20 text-destructive-foreground"
                 )}
               >
                 {result.prediction === "Normal" ? (
-                  <CheckCircle className="w-3.5 h-3.5" />
+                  <CheckCircle className="w-4 h-4" />
                 ) : (
-                  <AlertCircle className="w-3.5 h-3.5" />
+                  <AlertCircle className="w-4 h-4" />
                 )}
                 {result.prediction}
               </span>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Confidence score */}
-            <div className="flex items-center gap-4">
-              <div className="relative w-16 h-16">
+          <CardContent className="space-y-4 pt-5">
+            <div className="flex items-center gap-5">
+              <div className="relative w-20 h-20">
                 <svg
-                  className="w-full h-full -rotate-90"
+                  className="w-full h-full -rotate-90 drop-shadow-sm"
                   viewBox="0 0 100 100"
                 >
                   <circle
@@ -316,7 +379,7 @@ export function MRIAnalyzer() {
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="8"
-                    className="text-muted"
+                    className="text-muted/30"
                   />
                   <circle
                     cx="50"
@@ -330,33 +393,35 @@ export function MRIAnalyzer() {
                     className={
                       result.prediction === "Normal"
                         ? "text-success"
-                        : "text-warning"
+                        : "text-destructive"
                     }
                   />
                 </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-sm font-bold text-foreground">
+                <div className="absolute inset-0 flex items-center justify-center flex-col">
+                  <span className="text-lg font-bold text-foreground leading-none">
                     {result.confidence.toFixed(0)}%
                   </span>
                 </div>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Confidence</p>
-                <p className="font-medium text-foreground text-sm">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">AI Confidence Score</p>
+                <p className="font-bold text-foreground text-lg">
                   {result.confidence >= 90
-                    ? "High"
+                    ? "Very High"
                     : result.confidence >= 75
                     ? "Moderate"
                     : "Low"}
                 </p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
+                  Based on deep learning feature extraction.
+                </p>
               </div>
             </div>
 
-            {/* Disclaimer */}
-            <Alert className="bg-muted/50">
-              <AlertCircle className="h-3.5 w-3.5" />
-              <AlertDescription className="text-xs">
-                For research purposes only. Consult a medical professional for diagnosis.
+            <Alert className="bg-muted/50 border-none">
+              <AlertCircle className="h-4 w-4 text-muted-foreground" />
+              <AlertDescription className="text-xs text-muted-foreground">
+                For educational and research purposes only. Always consult a certified medical professional for an official clinical diagnosis.
               </AlertDescription>
             </Alert>
           </CardContent>
@@ -380,30 +445,30 @@ export function MRIAnalyzer() {
 
       {/* Action buttons */}
       {state === "upload" && (
-        <Button className="w-full" disabled>
-          <Brain className="w-4 h-4 mr-2" />
+        <Button className="w-full h-12 text-base" disabled>
+          <Brain className="w-5 h-5 mr-2" />
           Upload a scan to begin
         </Button>
       )}
 
       {state === "file-loaded" && (
-        <Button className="w-full" onClick={handleAnalyze} disabled={isProcessing}>
-          <Brain className="w-4 h-4 mr-2" />
-          Start Analysis
+        <Button className="w-full h-12 text-base font-semibold shadow-md hover:shadow-lg transition-all" onClick={handleAnalyze} disabled={isProcessing}>
+          <Brain className="w-5 h-5 mr-2" />
+          Start Deep Learning Analysis
         </Button>
       )}
 
       {state === "processing" && (
-        <Button className="w-full" disabled>
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Analyzing...
+        <Button className="w-full h-12 text-base" disabled>
+          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+          Processing MRI Scan...
         </Button>
       )}
 
       {state === "results" && (
-        <Button variant="secondary" className="w-full" onClick={resetAnalyzer}>
-          <RefreshCcw className="w-4 h-4 mr-2" />
-          Analyze Another Scan
+        <Button variant="outline" className="w-full h-12 text-base border-primary/20 hover:bg-primary/5" onClick={resetAnalyzer}>
+          <RefreshCcw className="w-5 h-5 mr-2" />
+          Analyze Another Patient Scan
         </Button>
       )}
     </div>
