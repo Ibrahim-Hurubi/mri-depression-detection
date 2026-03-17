@@ -201,7 +201,6 @@ export function MRIAnalyzer() {
         confidence: data.confidence || 0,
       })
 
-      // 🔥 إصلاح مشكلة الهيتماب 🔥
       if (data.heatmap && nvRef.current) {
         try {
           const byteCharacters = atob(data.heatmap);
@@ -210,18 +209,17 @@ export function MRIAnalyzer() {
             byteNumbers[i] = byteCharacters.charCodeAt(i);
           }
           const byteArray = new Uint8Array(byteNumbers);
-          
-          // السر هنا: إنشاء ملف حقيقي بامتداد .nii.gz عشان NiiVue تفهمه
-          const file = new File([byteArray], "heatmap.nii.gz", { type: 'application/octet-stream' });
-          const heatmapUrl = URL.createObjectURL(file);
+          const blob = new Blob([byteArray], { type: 'application/gzip' });
+          const heatmapUrl = URL.createObjectURL(blob);
 
+          // دمج الهيتماب الملون التدرجي فوق صورة الدماغ
           await nvRef.current.addVolumeFromUrl({
             url: heatmapUrl,
-            name: 'heatmap.nii.gz', // اسم صريح
-            colormap: 'red',        // اللون أحمر حراري
-            opacity: 0.6,           // شفافية 60%
+            colormap: 'red',
+            opacity: 0.6,
           });
           
+          // تغيير العرض تلقائياً للشرائح لرؤية التدرج بوضوح
           nvRef.current.setSliceType(nvRef.current.sliceTypeMultiplanar);
 
         } catch (overlayErr) {
