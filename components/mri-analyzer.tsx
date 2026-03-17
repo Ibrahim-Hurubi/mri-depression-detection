@@ -209,17 +209,19 @@ export function MRIAnalyzer() {
             byteNumbers[i] = byteCharacters.charCodeAt(i);
           }
           const byteArray = new Uint8Array(byteNumbers);
-          const blob = new Blob([byteArray], { type: 'application/gzip' });
-          const heatmapUrl = URL.createObjectURL(blob);
+          const file = new File([byteArray], "heatmap.nii.gz", { type: 'application/octet-stream' });
+          const heatmapUrl = URL.createObjectURL(file);
 
-          // دمج الهيتماب الملون التدرجي فوق صورة الدماغ
+          // 🔥 إضافة خصائص الـ 3D Grad-CAM الطبية الاحترافية 🔥
           await nvRef.current.addVolumeFromUrl({
             url: heatmapUrl,
-            colormap: 'red',
-            opacity: 0.6,
+            name: 'heatmap.nii.gz',
+            colormap: 'warm',    // تدرج حراري من الأحمر للبرتقالي للأصفر
+            opacity: 0.5,        // شفافية 50%
+            cal_min: 0.3,        // الإخفاء المتدرج للأطراف (Fade out)
+            cal_max: 1.0         // أعلى نقطة إضاءة
           });
           
-          // تغيير العرض تلقائياً للشرائح لرؤية التدرج بوضوح
           nvRef.current.setSliceType(nvRef.current.sliceTypeMultiplanar);
 
         } catch (overlayErr) {
@@ -375,25 +377,25 @@ export function MRIAnalyzer() {
 
       {/* Results State */}
       {state === "results" && result && (
-        <Card className="border-primary/20 shadow-md">
-          <CardHeader className="pb-3 bg-primary/5 border-b border-primary/10">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
+        <Card className="border-primary/20 shadow-md overflow-hidden">
+          <CardHeader className="p-4 bg-slate-50/50 border-b border-border/50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <CardTitle className="text-lg flex items-center gap-2">
                 <Brain className="w-5 h-5 text-primary" />
                 Analysis Complete
               </CardTitle>
               <span
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold",
+                  "inline-flex items-center justify-center px-3 py-1.5 rounded-full text-sm font-bold shadow-sm shrink-0 whitespace-nowrap",
                   result.prediction === "Normal"
-                    ? "bg-success/20 text-success-foreground"
-                    : "bg-destructive/20 text-destructive-foreground"
+                    ? "bg-green-100 text-green-700 border border-green-200"
+                    : "bg-red-100 text-red-700 border border-red-200"
                 )}
               >
                 {result.prediction === "Normal" ? (
-                  <CheckCircle className="w-4 h-4" />
+                  <CheckCircle className="w-4 h-4 mr-1.5" />
                 ) : (
-                  <AlertCircle className="w-4 h-4" />
+                  <AlertCircle className="w-4 h-4 mr-1.5" />
                 )}
                 {result.prediction}
               </span>
@@ -401,7 +403,6 @@ export function MRIAnalyzer() {
           </CardHeader>
           <CardContent className="space-y-4 pt-5">
             <div className="flex items-center gap-5">
-              {/* 🔥 إصلاح تداخل العناصر بالتصميم (shrink-0) 🔥 */}
               <div className="relative w-20 h-20 shrink-0">
                 <svg
                   className="w-full h-full -rotate-90 drop-shadow-sm"
