@@ -11,7 +11,8 @@ import {
   Loader2,
   RefreshCcw,
   FileImage,
-  Maximize
+  Maximize,
+  Layers
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -99,6 +100,13 @@ export function MRIAnalyzer() {
     }
   }
 
+  // دالة تغيير نوع العرض الطبي
+  const changeView = (type: number) => {
+    if (nvRef.current) {
+      nvRef.current.setSliceType(type)
+    }
+  }
+
   useEffect(() => {
     if ((state === "file-loaded" || state === "processing" || state === "results") && fileInfo?.file && canvasRef.current) {
       let isMounted = true;
@@ -126,8 +134,8 @@ export function MRIAnalyzer() {
             name: fileInfo.name
           }]);
 
-          // تم التعديل هنا ليعرض 3 مقاطع احترافية (Multiplanar)
-          nv.setSliceType(nv.sliceTypeMultiplanar);
+          // البداية دائماً كـ 3D
+          nv.setSliceType(nv.sliceTypeRender);
           
         } catch (err) {
           console.error("Error loading 3D viewer:", err);
@@ -142,7 +150,6 @@ export function MRIAnalyzer() {
     }
   }, [state, fileInfo]);
 
-  // The Real API Integration
   const handleAnalyze = async () => {
     if (!fileInfo?.file) return
 
@@ -151,12 +158,10 @@ export function MRIAnalyzer() {
     setApiError(null)
     setProgress(0)
 
-    // Prepare FormData for API
     const formData = new FormData()
     formData.append("file", fileInfo.file)
 
     try {
-      // Simulate processing steps for UX feedback
       for (let i = 0; i < PROCESSING_STEPS.length; i++) {
         setProcessingStep(PROCESSING_STEPS[i])
         const targetProgress = ((i + 1) / PROCESSING_STEPS.length) * 100
@@ -178,7 +183,7 @@ export function MRIAnalyzer() {
         })
       }
 
-      // Your Local Backend via Ngrok
+      // تأكد أن الرابط هو رابط Ngrok الخاص بك
       const API_ENDPOINT = "https://undepressive-esmeralda-frolicsomely.ngrok-free.dev/api/analyze"
       
       const response = await fetch(API_ENDPOINT, {
@@ -193,10 +198,8 @@ export function MRIAnalyzer() {
         throw new Error(`Analysis failed: ${response.statusText}`)
       }
 
-      // 1. Receive data from your Python backend
       const data = await response.json()
       
-      // 2. Map backend response to Frontend
       setResult({
         prediction: data.diagnosis || "Normal", 
         confidence: data.confidence || 0,
@@ -266,16 +269,29 @@ export function MRIAnalyzer() {
         </Card>
       )}
 
-      {/* 3D Viewer State */}
+      {/* 3D Viewer State with Controls */}
       {(state === "file-loaded" || state === "processing" || state === "results") && fileInfo && (
         <Card className="overflow-hidden border-border/50">
           <div className="bg-black/95 relative aspect-video w-full flex items-center justify-center overflow-hidden border-b border-border/50">
             <canvas ref={canvasRef} className="w-full h-full outline-none cursor-grab active:cursor-grabbing" />
-            <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
-              <Maximize className="w-4 h-4 text-white/70" />
-              <span className="text-xs font-medium text-white/90">Interactive 3D View</span>
+            
+            {/* الشارة العلوية */}
+            <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10 pointer-events-none">
+              <Layers className="w-4 h-4 text-white/70" />
+              <span className="text-xs font-medium text-white/90">Clinical MRI Viewer</span>
+            </div>
+
+            {/* لوحة التحكم (تغيير نوع العرض) */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/60 backdrop-blur-md p-1.5 rounded-full border border-white/10 z-10">
+              <button onClick={() => changeView(4)} className="px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 rounded-full transition-colors">3D</button>
+              <button onClick={() => changeView(3)} className="px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 rounded-full transition-colors">Multiplanar</button>
+              <div className="w-px h-4 bg-white/20 mx-1"></div>
+              <button onClick={() => changeView(0)} className="px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 rounded-full transition-colors">Axial</button>
+              <button onClick={() => changeView(1)} className="px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 rounded-full transition-colors">Coronal</button>
+              <button onClick={() => changeView(2)} className="px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 rounded-full transition-colors">Sagittal</button>
             </div>
           </div>
+
           <CardContent className="p-4 bg-muted/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
