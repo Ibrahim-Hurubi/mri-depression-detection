@@ -9,7 +9,7 @@ const steps = [
   {
     icon: ShieldCheck,
     title: "Verify",
-    description: "System verifies the correct medical file format (.nii or .dcm)",
+    description: "System verifies the correct medical file format (.nii or nii.gz)",
   },
   {
     icon: Cpu,
