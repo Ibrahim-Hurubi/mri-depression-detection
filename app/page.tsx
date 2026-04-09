@@ -16,11 +16,11 @@ export default function HomePage() {
               Deep Learning Based Depression Detection from Brain MRI
             </h1>
             <p className="text-muted-foreground text-sm max-w-md mx-auto text-pretty">
-              Upload your brain MRI scan for AI-powered analysis using deep learning models.
+              Upload your structural T1-weighted MRI scan for 3D-ResNet volumetric analysis.
             </p>
           </div>
 
-          {/* MRI Analyzer (Upload + Button) */}
+          {/* MRI Analyzer (Upload + API Connection) */}
           <MRIAnalyzer />
         </div>
       </main>
@@ -30,7 +30,7 @@ export default function HomePage() {
 
       <footer className="py-6 px-6 border-t border-border">
         <p className="text-center text-xs text-muted-foreground">
-          Research Tool - For educational and research purposes only
+          Research Tool - For educational and clinical research purposes only.
         </p>
       </footer>
     </div>
