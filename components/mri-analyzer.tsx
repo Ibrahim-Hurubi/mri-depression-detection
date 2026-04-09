@@ -47,12 +47,12 @@ const SUPPORTED_EXTENSIONS = [".nii", ".nii.gz"]
 const PROCESSING_STEPS = [
   { text: "Initializing secure medical environment...", limit: 10 },
   { text: "Loading 3D NIfTI volume into memory...", limit: 25 },
-  { text: "Normalizing voxel intensities (Z-Score)...", limit: 40 },
+  { text: "Resizing and normalizing volume to 96x96x96...", limit: 40 },
   { text: "Executing 3D ResNet-18 Deep Learning model...", limit: 60 },
-  { text: "Analyzing hippocampal and amygdala regions...", limit: 75 },
-  { text: "Computing Grad-CAM heatmaps (Explainability)...", limit: 85 },
-  { text: "Cross-referencing with clinical dataset...", limit: 95 },
-  { text: "Finalizing diagnostic report...", limit: 99 },
+  { text: "Extracting deep spatial hierarchies...", limit: 75 },
+  { text: "Computing Grad-CAM attention maps...", limit: 85 },
+  { text: "Cross-referencing biomarker patterns...", limit: 95 },
+  { text: "Finalizing diagnostic clinical report...", limit: 99 },
 ]
 
 // Function to convert bytes to a readable format like MB
@@ -416,7 +416,7 @@ export function MRIAnalyzer() {
                 <div className="space-y-1">
                   <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Confidence Level</p>
                   <p className="text-xl font-bold">{result.confidence >= 90 ? "High Reliability" : "Moderate Confidence"}</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">Calculated via deep learning voxel analysis.</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">Calculated via deep learning volumetric analysis.</p>
                 </div>
               </div>
               
@@ -424,8 +424,8 @@ export function MRIAnalyzer() {
                 <h4 className="text-xs font-black uppercase mb-3 flex items-center gap-2"><Layers className="w-3 h-3" /> Technical Specs</h4>
                 <ul className="space-y-2">
                   <li className="text-[10px] flex justify-between"><span>Architecture:</span> <span className="font-bold">3D ResNet-18</span></li>
-                  <li className="text-[10px] flex justify-between"><span>Input Shape:</span> <span className="font-bold">1x128x128x128</span></li>
-                  <li className="text-[10px] flex justify-between"><span>Method:</span> <span className="font-bold">Grad-CAM Map</span></li>
+                  <li className="text-[10px] flex justify-between"><span>Target Volume:</span> <span className="font-bold">96x96x96</span></li>
+                  <li className="text-[10px] flex justify-between"><span>Interpretability:</span> <span className="font-bold">Grad-CAM Overlay</span></li>
                 </ul>
               </div>
             </div>
@@ -433,7 +433,7 @@ export function MRIAnalyzer() {
             <Alert className="bg-yellow-50/50 border-yellow-100 text-yellow-800">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="text-[10px] font-medium leading-normal">
-                DISCLAIMER: This system is a graduation project research tool. Results should be verified by a medical specialist.
+                DISCLAIMER: This system is a graduation project research tool. Results are intended for clinical exploration and must be verified by a medical specialist.
               </AlertDescription>
             </Alert>
           </CardContent>
