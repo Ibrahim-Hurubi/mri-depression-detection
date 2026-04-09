@@ -7,8 +7,8 @@ const geist = Geist({ subsets: ["latin"], variable: '--font-sans' });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: '--font-mono' });
 
 export const metadata: Metadata = {
-  title: 'Depression Detection from Brain MRI | Deep Learning Analysis',
-  description: 'AI-powered deep learning analysis for detecting depression signs from brain MRI scans. Research tool for medical professionals.',
+  title: 'MDD Detection System | 3D-ResNet MRI Analysis',
+  description: 'AI-powered deep learning platform for objective classification of Major Depressive Disorder (MDD) using structural T1-weighted brain MRI scans.',
   icons: {
     icon: [
       {
@@ -35,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}>
+      <body className={`${geist.variable} ${geistMono.variable} font-sans antialiased bg-background text-foreground`}>
         {children}
         <Analytics />
       </body>
