@@ -4,22 +4,22 @@ const steps = [
   {
     icon: Upload,
     title: "Upload",
-    description: "Upload your brain MRI scan",
+    description: "Upload a structural T1-weighted brain MRI scan.",
   },
   {
     icon: ShieldCheck,
-    title: "Verify",
-    description: "System verifies the correct medical file format (.nii or nii.gz)",
+    title: "Preprocess",
+    description: "System verifies the NIfTI format and standardizes the volumetric data to 96x96x96.",
   },
   {
     icon: Cpu,
     title: "Analyze",
-    description: "Deep learning model processes the scan",
+    description: "The 3D-ResNet18 engine extracts spatial hierarchies and clinical biomarkers.",
   },
   {
     icon: FileText,
-    title: "Results",
-    description: "View the detailed AI analysis report",
+    title: "Interpret",
+    description: "Review the diagnosis, confidence score, and Grad-CAM interpretability heatmap.",
   },
 ]
 
@@ -27,7 +27,7 @@ export function HowItWorks() {
   return (
     <section className="py-16 px-6">
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-2xl font-semibold text-center mb-12">How It Works</h2>
+        <h2 className="text-2xl font-semibold text-center mb-12">How The Brain Mill Works</h2>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {steps.map((step, index) => (
