@@ -14,7 +14,11 @@ import {
   Maximize,
   Layers,
   Activity,
-  Search
+  Search,
+  User,
+  GraduationCap,
+  ClipboardList,
+  Fingerprint
 } from "lucide-react"
 
 // Import UI components from the project library
@@ -43,33 +47,30 @@ interface AnalysisResult {
 // Medical imaging formats we support in this project
 const SUPPORTED_EXTENSIONS = [".nii", ".nii.gz"]
 
-// List of clinical steps to show during the progress simulation
+// List of clinical steps updated for Multimodal Model
 const PROCESSING_STEPS = [
   { text: "Initializing secure medical environment...", limit: 10 },
-  { text: "Loading 3D NIfTI volume into memory...", limit: 25 },
-  { text: "Resizing and normalizing volume to 96x96x96...", limit: 40 },
-  { text: "Executing 3D ResNet-18 Deep Learning model...", limit: 60 },
-  { text: "Extracting deep spatial hierarchies...", limit: 75 },
-  { text: "Computing Grad-CAM attention maps...", limit: 85 },
-  { text: "Cross-referencing biomarker patterns...", limit: 95 },
+  { text: "Loading 3D NIfTI volume into memory...", limit: 20 },
+  { text: "Fusing Clinical Metadata with MRI Features...", limit: 35 },
+  { text: "Normalizing 3D Volume to 64x64x64...", limit: 50 },
+  { text: "Executing SOTA Multimodal Fusion Network...", limit: 65 },
+  { text: "Calculating SE-Attention activation maps...", limit: 80 },
+  { text: "Computing Grad-CAM explainability...", limit: 90 },
   { text: "Finalizing diagnostic clinical report...", limit: 99 },
 ]
 
-// Function to convert bytes to a readable format like MB
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-// Simple check for valid medical file extensions
 function isValidFile(fileName: string): boolean {
   const lowerName = fileName.toLowerCase();
   return SUPPORTED_EXTENSIONS.some(ext => lowerName.endsWith(ext));
 }
 
 export function MRIAnalyzer() {
-  // Main states for managing the workflow
   const [state, setState] = useState<AnalyzerState>("upload")
   const [fileInfo, setFileInfo] = useState<FileInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -77,208 +78,143 @@ export function MRIAnalyzer() {
   const [processingStep, setProcessingStep] = useState("")
   const [result, setResult] = useState<AnalysisResult | null>(null)
   
-  // Connection and API handling states
+  //  Clinical Data States
+  const [clinicalData, setClinicalData] = useState({
+    age: "30",
+    sex: "1", // 1 for Male, 0 for Female
+    edu: "16",
+    hamd: "15"
+  });
+
   const [isProcessing, setIsProcessing] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
 
-  // Refs for the Niivue 3D canvas to avoid unnecessary re-renders
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const nvRef = useRef<any>(null)
 
-  // Logic to handle file selection or dropping
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setClinicalData(prev => ({ ...prev, [name]: value }));
+  };
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    setError(null)
-    setApiError(null)
-    
-    if (acceptedFiles.length === 0) return
-
-    const file = acceptedFiles[0]
-    
-    // Check if file is valid before moving forward
+    setError(null); setApiError(null);
+    if (acceptedFiles.length === 0) return;
+    const file = acceptedFiles[0];
     if (!isValidFile(file.name)) {
-      setError("Invalid format. Please upload .nii or .nii.gz MRI files only.")
-      return
+      setError("Invalid format. Please upload .nii or .nii.gz MRI files only.");
+      return;
     }
-
-    // Save file and update state to show the viewer
-    setFileInfo({ name: file.name, size: file.size, file })
-    setState("file-loaded")
-  }, [])
+    setFileInfo({ name: file.name, size: file.size, file });
+    setState("file-loaded");
+  }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     multiple: false,
-  })
+  });
 
-  // Clear current file and reset UI
   const removeFile = () => {
-    setFileInfo(null)
-    setState("upload")
-    setError(null)
-    setApiError(null)
-    setProgress(0)
-    
-    // Clean up Niivue instance
-    if (nvRef.current) {
-      nvRef.current = null
-    }
+    setFileInfo(null); setState("upload"); setError(null);
+    setApiError(null); setProgress(0);
+    if (nvRef.current) nvRef.current = null;
   }
 
-  // View switcher (Axial, Coronal, Sagittal, or 3D)
   const changeView = (type: number) => {
-    if (nvRef.current) {
-      nvRef.current.setSliceType(type)
-    }
+    if (nvRef.current) nvRef.current.setSliceType(type);
   }
 
-  // Initializing the 3D viewer when file is loaded
   useEffect(() => {
     if ((state === "file-loaded" || state === "processing" || state === "results") && fileInfo?.file && canvasRef.current) {
       let isMounted = true;
-      
       const initViewer = async () => {
         try {
           const { Niivue } = await import("@niivue/niivue");
-          
           if (!isMounted || !canvasRef.current || nvRef.current) return;
-
-          // Niivue startup settings
-          const nv = new Niivue({
-            backColor: [0.05, 0.05, 0.05, 1],
-            show3Dcrosshair: true,
-            dragAndDropEnabled: false
-          });
-
+          const nv = new Niivue({ backColor: [0.05, 0.05, 0.05, 1], show3Dcrosshair: true, dragAndDropEnabled: false });
           nv.attachToCanvas(canvasRef.current);
           nvRef.current = nv;
-
-          // Load local file into the viewer
           const url = URL.createObjectURL(fileInfo.file);
           await nv.loadVolumes([{ url, name: fileInfo.name }]);
-          
           nv.setSliceType(nv.sliceTypeRender);
-          
-        } catch (err) {
-          console.error("3D Viewer failed:", err);
-        }
+        } catch (err) { console.error("3D Viewer failed:", err); }
       };
-      
       initViewer();
       return () => { isMounted = false; };
     }
   }, [state, fileInfo]);
 
-  // Main logic to start analysis and talk to the backend
   const handleAnalyze = async () => {
     if (!fileInfo?.file) return
+    setState("processing"); setIsProcessing(true); setApiError(null); setProgress(0);
 
-    setState("processing")
-    setIsProcessing(true)
-    setApiError(null)
-    setProgress(0)
+    // 🚀 Prepare Multimodal FormData
+    const formData = new FormData();
+    formData.append("file", fileInfo.file);
+    formData.append("age", clinicalData.age);
+    formData.append("sex", clinicalData.sex);
+    formData.append("edu", clinicalData.edu);
+    formData.append("hamd", clinicalData.hamd);
 
-    const formData = new FormData()
-    formData.append("file", fileInfo.file)
-
-    // 🔥 SMART API SELECTION: Automatically switches between Local and Online (Ngrok)
     const getApiUrl = () => {
       if (typeof window !== "undefined") {
         const hostname = window.location.hostname;
-        // If we are on localhost (my Zorin laptop), use the fast direct link
-        if (hostname === "localhost" || hostname === "127.0.0.1") {
-          return "http://127.0.0.1:8000/api/analyze";
-        }
+        if (hostname === "localhost" || hostname === "127.0.0.1") return "http://127.0.0.1:8000/api/analyze";
       }
-      // Use Ngrok tunnel for external access (Doctor's devices)
       return "https://undepressive-esmeralda-frolicsomely.ngrok-free.dev/api/analyze";
     };
 
-    const API_ENDPOINT = getApiUrl();
-
-    // Progress bar simulation (Faster and more responsive)
     const animationInterval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 98) {
-          // If stuck at 98%, show that we are waiting for the server
-          setProcessingStep("Processing on server (Zorin OS)... Please wait.");
+          setProcessingStep("Waiting for Multimodal Fusion (Zorin Server)...");
           return 98; 
         }
-
         const step = PROCESSING_STEPS.find(s => prev < s.limit) || PROCESSING_STEPS[7];
         setProcessingStep(step.text);
-
-        // Faster speed to keep the flow smooth
-        let increment = 1.0; 
-        if (prev < 40) increment = 2.0; // Quick start
-        else if (prev > 80) increment = 0.4; // Slow down near the end
-        
-        return Math.min(prev + increment, 98);
+        return Math.min(prev + (prev < 40 ? 1.5 : 0.5), 98);
       });
-    }, 100);
+    }, 150);
 
     try {
-      const response = await fetch(API_ENDPOINT, {
+      const response = await fetch(getApiUrl(), {
         method: "POST",
         body: formData,
         headers: { "ngrok-skip-browser-warning": "true" }
       });
 
-      if (!response.ok) throw new Error("Connection failed. Check if server is running.");
+      if (!response.ok) throw new Error("Server connection failed.");
       const data = await response.json();
 
-      // Finish progress once we get the real data
       clearInterval(animationInterval);
       setProgress(100);
-      setProcessingStep("Analysis complete. Generating heatmaps...");
-      
+      setProcessingStep("Diagnostic complete.");
       await new Promise(r => setTimeout(r, 600));
 
-      setResult({
-        prediction: data.diagnosis || "Normal", 
-        confidence: data.confidence || 0,
-      });
+      setResult({ prediction: data.diagnosis, confidence: data.confidence });
 
-      // Loading the heatmap overlay from the server
       if (data.heatmap && nvRef.current) {
         try {
           const byteCharacters = atob(data.heatmap);
           const byteNumbers = new Array(byteCharacters.length);
-          for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-          }
-          const byteArray = new Uint8Array(byteNumbers);
-          const heatmapFile = new File([byteArray], "heatmap.nii.gz", { type: 'application/octet-stream' });
+          for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
+          const heatmapFile = new File([new Uint8Array(byteNumbers)], "heatmap.nii.gz");
           const heatmapUrl = URL.createObjectURL(heatmapFile);
-
-          await nvRef.current.addVolumeFromUrl({
-            url: heatmapUrl,
-            name: 'heatmap.nii.gz',
-            colormap: 'warm',    
-            opacity: 0.55,       
-            cal_min: 0.35,       
-            cal_max: 1.0
-          });
-          
+          await nvRef.current.addVolumeFromUrl({ url: heatmapUrl, name: 'heatmap', colormap: 'warm', opacity: 0.55, cal_min: 0.35 });
           nvRef.current.setSliceType(nvRef.current.sliceTypeMultiplanar);
-          
         } catch (e) { console.error("Overlay error:", e); }
       }
-      
-      setState("results")
-
+      setState("results");
     } catch (err) {
       clearInterval(animationInterval);
-      setApiError(err instanceof Error ? err.message : "Network error.");
+      setApiError("Network Error: Ensure Zorin Backend is running.");
       setState("file-loaded");
-    } finally {
-      setIsProcessing(false);
-    }
+    } finally { setIsProcessing(false); }
   }
 
-  // Reset function to analyze a new scan
   const resetAnalyzer = () => {
     setState("upload"); setFileInfo(null); setError(null); setApiError(null);
-    setProgress(0); setProcessingStep(""); setResult(null); setIsProcessing(false);
+    setProgress(0); setResult(null); setIsProcessing(false);
     if (nvRef.current) nvRef.current = null;
   }
 
@@ -308,74 +244,114 @@ export function MRIAnalyzer() {
 
       {/* 2. 3D VIEWER CONTAINER */}
       {(state === "file-loaded" || state === "processing" || state === "results") && fileInfo && (
-        <Card className="overflow-hidden border-border/50 shadow-xl">
-          <div className="bg-black relative aspect-video w-full flex items-center justify-center overflow-hidden border-b border-border/50 shadow-inner">
-            <canvas ref={canvasRef} className="w-full h-full outline-none" />
-            
-            <div className="absolute top-4 left-4 flex gap-2">
-              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
-                <Activity className="w-4 h-4 text-primary" />
-                <span className="text-[10px] font-bold text-white uppercase tracking-wider">Live MRI Stream</span>
+        <>
+          <Card className="overflow-hidden border-border/50 shadow-xl">
+            <div className="bg-black relative aspect-video w-full flex items-center justify-center overflow-hidden border-b border-border/50">
+              <canvas ref={canvasRef} className="w-full h-full outline-none" />
+              <div className="absolute top-4 left-4 flex gap-2">
+                <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
+                  <Activity className="w-4 h-4 text-primary" />
+                  <span className="text-[10px] font-bold text-white uppercase tracking-wider tracking-widest">Live MRI Stream</span>
+                </div>
+              </div>
+              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/80 backdrop-blur-xl p-1 rounded-xl border border-white/10 z-20">
+                <button onClick={() => changeView(4)} className="px-4 py-2 text-xs font-bold text-white hover:bg-primary/20 rounded-lg">3D View</button>
+                <button onClick={() => changeView(3)} className="px-4 py-2 text-xs font-bold text-white hover:bg-primary/20 rounded-lg border-x border-white/5">Multiplanar</button>
+                <div className="flex gap-1 px-1">
+                  <button onClick={() => changeView(0)} className="p-2 text-[10px] font-bold text-white/70 hover:text-white">AXI</button>
+                  <button onClick={() => changeView(1)} className="p-2 text-[10px] font-bold text-white/70 hover:text-white">COR</button>
+                  <button onClick={() => changeView(2)} className="p-2 text-[10px] font-bold text-white/70 hover:text-white">SAG</button>
+                </div>
               </div>
             </div>
+            <CardContent className="p-4 bg-muted/10 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/5">
+                  <FileImage className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-bold text-foreground text-sm truncate max-w-[200px]">{fileInfo.name}</p>
+                  <p className="text-[10px] text-muted-foreground font-mono">{formatFileSize(fileInfo.size)}</p>
+                </div>
+              </div>
+              {state === "file-loaded" && (
+                <button onClick={removeFile} className="p-2 rounded-xl bg-destructive/5 hover:bg-destructive/10 text-destructive">
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              )}
+            </CardContent>
+          </Card>
 
-            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/80 backdrop-blur-xl p-1 rounded-xl border border-white/10 z-20">
-              <button onClick={() => changeView(4)} className="px-4 py-2 text-xs font-bold text-white hover:bg-primary/20 rounded-lg">3D View</button>
-              <button onClick={() => changeView(3)} className="px-4 py-2 text-xs font-bold text-white hover:bg-primary/20 rounded-lg border-x border-white/5">Multiplanar</button>
-              <div className="flex gap-1 px-1">
-                <button onClick={() => changeView(0)} className="p-2 text-[10px] font-bold text-white/70 hover:text-white">AXI</button>
-                <button onClick={() => changeView(1)} className="p-2 text-[10px] font-bold text-white/70 hover:text-white">COR</button>
-                <button onClick={() => changeView(2)} className="p-2 text-[10px] font-bold text-white/70 hover:text-white">SAG</button>
-              </div>
-            </div>
-          </div>
-
-          <CardContent className="p-4 bg-muted/10 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/5">
-                <FileImage className="w-6 h-6 text-primary" />
-              </div>
-              <div className="space-y-0.5">
-                <p className="font-bold text-foreground text-sm truncate max-w-[250px]">{fileInfo.name}</p>
-                <p className="text-xs text-muted-foreground font-mono">{formatFileSize(fileInfo.size)} • NIfTI Volume</p>
-              </div>
-            </div>
-            {state === "file-loaded" && (
-              <button onClick={removeFile} className="p-2.5 rounded-xl bg-destructive/5 hover:bg-destructive/10 text-destructive border border-destructive/10">
-                <Trash2 className="w-5 h-5" />
-              </button>
-            )}
-          </CardContent>
-        </Card>
+          {/*  2.5 CLINICAL DATA INPUTS (Visible when file is loaded) */}
+          {state === "file-loaded" && (
+            <Card className="border-primary/20 shadow-lg animate-in slide-in-from-bottom-2 duration-300">
+              <CardHeader className="py-4 border-b">
+                <CardTitle className="text-sm font-black uppercase flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4 text-primary" /> Patient Clinical Metadata
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-5">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-1">
+                      <Fingerprint className="w-3 h-3"/> Age
+                    </label>
+                    <input type="number" name="age" value={clinicalData.age} onChange={handleInputChange} 
+                      className="w-full bg-muted/50 border rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-1">
+                      <User className="w-3 h-3"/> Biological Sex
+                    </label>
+                    <select name="sex" value={clinicalData.sex} onChange={handleInputChange}
+                      className="w-full bg-muted/50 border rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 ring-primary/20 outline-none">
+                      <option value="1">Male</option>
+                      <option value="0">Female</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-1">
+                      <GraduationCap className="w-3 h-3"/> Education (Yrs)
+                    </label>
+                    <input type="number" name="edu" value={clinicalData.edu} onChange={handleInputChange}
+                      className="w-full bg-muted/50 border rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-1">
+                      <Activity className="w-3 h-3"/> HAM-D Score
+                    </label>
+                    <input type="number" name="hamd" value={clinicalData.hamd} onChange={handleInputChange}
+                      className="w-full bg-muted/50 border rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 ring-primary/20 outline-none" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
 
-      {/* 3. PROGRESS BAR (REALISTIC FLOW) */}
+      {/* 3. PROGRESS BAR */}
       {state === "processing" && (
         <Card className="border-primary/30 bg-primary/[0.02] shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-primary/10">
-            <div className="h-full bg-primary animate-progress-flow" style={{ width: '30%' }} />
-          </div>
           <CardContent className="p-8">
             <div className="flex flex-col items-center space-y-6">
               <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center ring-4 ring-primary/5">
-                  <Brain className="w-10 h-10 text-primary animate-pulse" />
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Brain className="w-8 h-8 text-primary animate-pulse" />
                 </div>
                 <div className="absolute -inset-2 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
               </div>
-
               <div className="text-center w-full space-y-2">
-                <h3 className="font-bold text-lg text-foreground tracking-tight">System Analysis in Progress</h3>
-                <p className="text-xs text-muted-foreground italic font-mono h-5 flex items-center justify-center gap-2">
+                <h3 className="font-bold text-foreground tracking-tight">Multimodal Fusion Analysis</h3>
+                <p className="text-[10px] text-muted-foreground italic font-mono flex items-center justify-center gap-2">
                   <Search className="w-3 h-3" /> {processingStep}
                 </p>
               </div>
-
               <div className="w-full max-w-md space-y-2">
-                <Progress value={progress} className="h-3 shadow-inner" />
-                <div className="flex justify-between text-[10px] text-muted-foreground font-mono font-bold uppercase">
-                  <span>Engine: 3D ResNet-18</span>
-                  <span>{Math.round(progress)}% Processed</span>
+                <Progress value={progress} className="h-2" />
+                <div className="flex justify-between text-[10px] text-muted-foreground font-bold uppercase">
+                  <span>SOTA Fusion Engine</span>
+                  <span>{Math.round(progress)}%</span>
                 </div>
               </div>
             </div>
@@ -416,38 +392,34 @@ export function MRIAnalyzer() {
                 <div className="space-y-1">
                   <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Confidence Level</p>
                   <p className="text-xl font-bold">{result.confidence >= 90 ? "High Reliability" : "Moderate Confidence"}</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">Calculated via deep learning volumetric analysis.</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">Calculated via multimodal fusion analysis.</p>
                 </div>
               </div>
-              
               <div className="bg-muted/30 p-4 rounded-2xl border border-border/50">
-                <h4 className="text-xs font-black uppercase mb-3 flex items-center gap-2"><Layers className="w-3 h-3" /> Technical Specs</h4>
+                <h4 className="text-xs font-black uppercase mb-3 flex items-center gap-2"><Layers className="w-3 h-3" /> Architecture Details</h4>
                 <ul className="space-y-2">
-                  <li className="text-[10px] flex justify-between"><span>Architecture:</span> <span className="font-bold">3D ResNet-18</span></li>
-                  <li className="text-[10px] flex justify-between"><span>Target Volume:</span> <span className="font-bold">96x96x96</span></li>
-                  <li className="text-[10px] flex justify-between"><span>Interpretability:</span> <span className="font-bold">Grad-CAM Overlay</span></li>
+                  <li className="text-[10px] flex justify-between"><span>Model Type:</span> <span className="font-bold">Late-Fusion Multimodal</span></li>
+                  <li className="text-[10px] flex justify-between"><span>Vision Core:</span> <span className="font-bold">SE-Attention 3D CNN</span></li>
+                  <li className="text-[10px] flex justify-between"><span>Interpretability:</span> <span className="font-bold">Grad-CAM Map</span></li>
                 </ul>
               </div>
             </div>
-
             <Alert className="bg-yellow-50/50 border-yellow-100 text-yellow-800">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="text-[10px] font-medium leading-normal">
-                DISCLAIMER: This system is a graduation project research tool. Results are intended for clinical exploration and must be verified by a medical specialist.
+                DISCLAIMER: This system is a research tool for graduation. Results must be verified by a medical specialist.
               </AlertDescription>
             </Alert>
           </CardContent>
         </Card>
       )}
 
-      {/* ERROR HANDLING */}
       {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription className="text-sm font-bold">{error}</AlertDescription></Alert>}
       {apiError && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription className="text-sm font-bold">{apiError}</AlertDescription></Alert>}
       
-      {/* FINAL BUTTONS */}
       {state === "file-loaded" && (
-        <Button className="w-full h-14 text-lg font-black shadow-2xl hover:scale-[1.01] active:scale-[0.99] transition-all" onClick={handleAnalyze} disabled={isProcessing}>
-          <Brain className="w-6 h-6 mr-3" /> RUN DEEP LEARNING ANALYSIS
+        <Button className="w-full h-14 text-lg font-black shadow-2xl hover:scale-[1.01] transition-all" onClick={handleAnalyze} disabled={isProcessing}>
+          <Brain className="w-6 h-6 mr-3" /> RUN MULTIMODAL ANALYSIS
         </Button>
       )}
 
