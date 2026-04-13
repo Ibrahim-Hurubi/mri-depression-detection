@@ -40,7 +40,7 @@ interface FileInfo {
 
 // Structured response from our FastAPI backend
 interface AnalysisResult {
-  prediction: "Normal" | "Depression Signs Detected" | string
+  prediction: "Normal Brain Structure" | "Depression Signs Detected" | string
   confidence: number
 }
 
@@ -148,7 +148,7 @@ export function MRIAnalyzer() {
     if (!fileInfo?.file) return
     setState("processing"); setIsProcessing(true); setApiError(null); setProgress(0);
 
-    // 🚀 Prepare Multimodal FormData
+    // Prepare Multimodal FormData
     const formData = new FormData();
     formData.append("file", fileInfo.file);
     formData.append("age", clinicalData.age);
@@ -159,7 +159,8 @@ export function MRIAnalyzer() {
     const getApiUrl = () => {
       if (typeof window !== "undefined") {
         const hostname = window.location.hostname;
-        if (hostname === "localhost" || hostname === "127.0.0.1") return "http://127.0.0.1:8000/api/analyze";
+        //localhost
+        if (hostname === "localhost" || hostname === "127.0.0.1") return "http://localhost:8000/api/analyze";
       }
       return "https://undepressive-esmeralda-frolicsomely.ngrok-free.dev/api/analyze";
     };
@@ -282,7 +283,7 @@ export function MRIAnalyzer() {
             </CardContent>
           </Card>
 
-          {/*  2.5 CLINICAL DATA INPUTS (Visible when file is loaded) */}
+          {/* 2.5 CLINICAL DATA INPUTS */}
           {state === "file-loaded" && (
             <Card className="border-primary/20 shadow-lg animate-in slide-in-from-bottom-2 duration-300">
               <CardHeader className="py-4 border-b">
@@ -370,9 +371,9 @@ export function MRIAnalyzer() {
               </div>
               <div className={cn(
                 "inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-black shadow-lg",
-                result.prediction === "Normal" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                result.prediction.includes("Normal") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
               )}>
-                {result.prediction === "Normal" ? <CheckCircle className="w-5 h-5 mr-2" /> : <AlertCircle className="w-5 h-5 mr-2" />}
+                {result.prediction.includes("Normal") ? <CheckCircle className="w-5 h-5 mr-2" /> : <AlertCircle className="w-5 h-5 mr-2" />}
                 {result.prediction}
               </div>
             </div>
@@ -383,7 +384,7 @@ export function MRIAnalyzer() {
                 <div className="relative w-24 h-24 shrink-0 drop-shadow-xl">
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="10" className="text-muted/20" />
-                    <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="10" strokeLinecap="round" strokeDasharray={`${result.confidence * 2.63} 263`} className={result.prediction === "Normal" ? "text-green-500" : "text-red-500"} />
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="10" strokeLinecap="round" strokeDasharray={`${result.confidence * 2.63} 263`} className={result.prediction.includes("Normal") ? "text-green-500" : "text-red-500"} />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-2xl font-black text-foreground">{result.confidence.toFixed(0)}%</span>
@@ -407,7 +408,7 @@ export function MRIAnalyzer() {
             <Alert className="bg-yellow-50/50 border-yellow-100 text-yellow-800">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="text-[10px] font-medium leading-normal">
-                DISCLAIMER: This system is a research tool for graduation. Results must be verified by a medical specialist.
+                DISCLAIMER: This system is a research tool. Results must be verified by a medical specialist.
               </AlertDescription>
             </Alert>
           </CardContent>
