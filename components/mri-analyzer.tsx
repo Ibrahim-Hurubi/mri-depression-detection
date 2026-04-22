@@ -218,8 +218,8 @@ export function MRIAnalyzer() {
             url: heatmapUrl, 
             name: 'heatmap.nii.gz', 
             colormap: 'warm', 
-            opacity: 0.50,          // Reduced opacity for organic tissue blending
-            cal_min: 0.20           // Lowered threshold to display soft trilinear edges
+            opacity: 0.60,          // Updated opacity for blending with structure
+            cal_min: 0.15           // Updated threshold to reflect guided backend masking
           });
           nvRef.current.setSliceType(nvRef.current.sliceTypeMultiplanar);
         } catch (e) { 
