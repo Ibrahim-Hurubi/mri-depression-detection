@@ -233,10 +233,10 @@ export function MRIAnalyzer() {
           
           await nvRef.current.addVolumeFromUrl({ 
             url: heatmapUrl, 
-            name: 'heatmap', 
+            name: 'heatmap.nii.gz', // File extension added for Niivue parser
             colormap: 'warm', 
-            opacity: 0.55, 
-            cal_min: 0.35 
+            opacity: 0.65,          // Increased opacity
+            cal_min: 0.05           // Lowered threshold to ensure visibility
           });
           nvRef.current.setSliceType(nvRef.current.sliceTypeMultiplanar);
         } catch (e) { 
