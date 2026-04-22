@@ -19,33 +19,28 @@ import {
   Fingerprint
 } from "lucide-react"
 
-// Import UI components from the project library (ensure these match your actual paths)
+// Import UI components from the project library
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 
-// Defining the possible states for the app UI
 type AnalyzerState = "upload" | "file-loaded" | "processing" | "results"
 
-// Structure to save uploaded file details
 interface FileInfo {
   name: string
   size: number
   file: File
 }
 
-// Structured response from our FastAPI backend
 interface AnalysisResult {
   prediction: "Normal Brain Structure" | "Depression Signs Detected" | string
   confidence: number
 }
 
-// Medical imaging formats we support in this project
 const SUPPORTED_EXTENSIONS = [".nii", ".nii.gz"]
 
-// List of clinical steps updated for Multimodal Model
 const PROCESSING_STEPS = [
   { text: "Initializing secure medical environment...", limit: 10 },
   { text: "Loading 3D NIfTI volume into memory...", limit: 20 },
@@ -76,10 +71,9 @@ export function MRIAnalyzer() {
   const [processingStep, setProcessingStep] = useState("")
   const [result, setResult] = useState<AnalysisResult | null>(null)
   
-  // Clinical Data States
   const [clinicalData, setClinicalData] = useState({
     age: "30",
-    sex: "1", // 1 for Male, 0 for Female
+    sex: "1", 
     edu: "16",
     hamd: "15"
   });
@@ -224,8 +218,8 @@ export function MRIAnalyzer() {
             url: heatmapUrl, 
             name: 'heatmap.nii.gz', 
             colormap: 'warm', 
-            opacity: 0.70,          // Optimized opacity for localized hotspots
-            cal_min: 0.45           // High threshold to filter sharpened background noise
+            opacity: 0.50,          // Reduced opacity for organic tissue blending
+            cal_min: 0.20           // Lowered threshold to display soft trilinear edges
           });
           nvRef.current.setSliceType(nvRef.current.sliceTypeMultiplanar);
         } catch (e) { 
