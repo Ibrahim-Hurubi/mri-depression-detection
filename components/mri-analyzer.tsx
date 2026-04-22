@@ -8,10 +8,8 @@ import {
   Trash2,
   AlertCircle,
   CheckCircle,
-  Loader2,
   RefreshCcw,
   FileImage,
-  Maximize,
   Layers,
   Activity,
   Search,
@@ -21,7 +19,7 @@ import {
   Fingerprint
 } from "lucide-react"
 
-// Import UI components from the project library
+// Import UI components from the project library (ensure these match your actual paths)
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -78,7 +76,7 @@ export function MRIAnalyzer() {
   const [processingStep, setProcessingStep] = useState("")
   const [result, setResult] = useState<AnalysisResult | null>(null)
   
-  //  Clinical Data States
+  // Clinical Data States
   const [clinicalData, setClinicalData] = useState({
     age: "30",
     sex: "1", // 1 for Male, 0 for Female
@@ -90,6 +88,7 @@ export function MRIAnalyzer() {
   const [apiError, setApiError] = useState<string | null>(null)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const nvRef = useRef<any>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -98,7 +97,8 @@ export function MRIAnalyzer() {
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    setError(null); setApiError(null);
+    setError(null); 
+    setApiError(null);
     if (acceptedFiles.length === 0) return;
     const file = acceptedFiles[0];
     if (!isValidFile(file.name)) {
@@ -115,9 +115,16 @@ export function MRIAnalyzer() {
   });
 
   const removeFile = () => {
-    setFileInfo(null); setState("upload"); setError(null);
-    setApiError(null); setProgress(0);
-    if (nvRef.current) nvRef.current = null;
+    setFileInfo(null); 
+    setState("upload"); 
+    setError(null);
+    setApiError(null); 
+    setProgress(0);
+    if (nvRef.current) {
+        // Attempt basic cleanup, though Niivue doesn't have a robust destroy method
+        // Re-attaching to a clean canvas is often the safest bet for full reset
+        nvRef.current = null; 
+    }
   }
 
   const changeView = (type: number) => {
@@ -131,22 +138,38 @@ export function MRIAnalyzer() {
         try {
           const { Niivue } = await import("@niivue/niivue");
           if (!isMounted || !canvasRef.current || nvRef.current) return;
-          const nv = new Niivue({ backColor: [0.05, 0.05, 0.05, 1], show3Dcrosshair: true, dragAndDropEnabled: false });
+          
+          const nv = new Niivue({ 
+            backColor: [0.05, 0.05, 0.05, 1], 
+            show3Dcrosshair: true, 
+            dragAndDropEnabled: false 
+          });
+          
           nv.attachToCanvas(canvasRef.current);
           nvRef.current = nv;
           const url = URL.createObjectURL(fileInfo.file);
+          
           await nv.loadVolumes([{ url, name: fileInfo.name }]);
           nv.setSliceType(nv.sliceTypeRender);
-        } catch (err) { console.error("3D Viewer failed:", err); }
+        } catch (err) { 
+          console.error("3D Viewer failed to initialize:", err); 
+        }
       };
+      
       initViewer();
-      return () => { isMounted = false; };
+      
+      return () => { 
+        isMounted = false; 
+      };
     }
   }, [state, fileInfo]);
 
   const handleAnalyze = async () => {
     if (!fileInfo?.file) return
-    setState("processing"); setIsProcessing(true); setApiError(null); setProgress(0);
+    setState("processing"); 
+    setIsProcessing(true); 
+    setApiError(null); 
+    setProgress(0);
 
     // Prepare Multimodal FormData
     const formData = new FormData();
@@ -157,10 +180,17 @@ export function MRIAnalyzer() {
     formData.append("hamd", clinicalData.hamd);
 
     const getApiUrl = () => {
+      // Prioritize Environment Variable
+      if (process.env.NEXT_PUBLIC_API_URL) {
+         return process.env.NEXT_PUBLIC_API_URL;
+      }
+      
+      // Fallback logic
       if (typeof window !== "undefined") {
         const hostname = window.location.hostname;
-        //localhost
-        if (hostname === "localhost" || hostname === "127.0.0.1") return "http://localhost:8000/api/analyze";
+        if (hostname === "localhost" || hostname === "127.0.0.1") {
+            return "http://localhost:8000/api/analyze";
+        }
       }
       return "https://undepressive-esmeralda-frolicsomely.ngrok-free.dev/api/analyze";
     };
@@ -184,7 +214,7 @@ export function MRIAnalyzer() {
         headers: { "ngrok-skip-browser-warning": "true" }
       });
 
-      if (!response.ok) throw new Error("Server connection failed.");
+      if (!response.ok) throw new Error(`Server connection failed. Status: ${response.status}`);
       const data = await response.json();
 
       clearInterval(animationInterval);
@@ -196,27 +226,46 @@ export function MRIAnalyzer() {
 
       if (data.heatmap && nvRef.current) {
         try {
-          const byteCharacters = atob(data.heatmap);
-          const byteNumbers = new Array(byteCharacters.length);
-          for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
-          const heatmapFile = new File([new Uint8Array(byteNumbers)], "heatmap.nii.gz");
+          // Optimized Base64 Decoding via Fetch API
+          const responseBlob = await fetch(`data:application/octet-stream;base64,${data.heatmap}`).then(res => res.blob());
+          const heatmapFile = new File([responseBlob], "heatmap.nii.gz");
           const heatmapUrl = URL.createObjectURL(heatmapFile);
-          await nvRef.current.addVolumeFromUrl({ url: heatmapUrl, name: 'heatmap', colormap: 'warm', opacity: 0.55, cal_min: 0.35 });
+          
+          await nvRef.current.addVolumeFromUrl({ 
+            url: heatmapUrl, 
+            name: 'heatmap', 
+            colormap: 'warm', 
+            opacity: 0.55, 
+            cal_min: 0.35 
+          });
           nvRef.current.setSliceType(nvRef.current.sliceTypeMultiplanar);
-        } catch (e) { console.error("Overlay error:", e); }
+        } catch (e) { 
+          console.error("Overlay parsing error:", e); 
+        }
       }
       setState("results");
     } catch (err) {
+      console.error("Analysis Request Error:", err);
       clearInterval(animationInterval);
-      setApiError("Network Error: Ensure Zorin Backend is running.");
+      setApiError("Network Error: Ensure Zorin Backend is running and reachable.");
       setState("file-loaded");
-    } finally { setIsProcessing(false); }
+    } finally { 
+      setIsProcessing(false); 
+    }
   }
 
   const resetAnalyzer = () => {
-    setState("upload"); setFileInfo(null); setError(null); setApiError(null);
-    setProgress(0); setResult(null); setIsProcessing(false);
-    if (nvRef.current) nvRef.current = null;
+    setState("upload"); 
+    setFileInfo(null); 
+    setError(null); 
+    setApiError(null);
+    setProgress(0); 
+    setResult(null); 
+    setIsProcessing(false);
+    if (nvRef.current) {
+        // Clear references
+        nvRef.current = null;
+    }
   }
 
   return (
@@ -248,11 +297,12 @@ export function MRIAnalyzer() {
         <>
           <Card className="overflow-hidden border-border/50 shadow-xl">
             <div className="bg-black relative aspect-video w-full flex items-center justify-center overflow-hidden border-b border-border/50">
-              <canvas ref={canvasRef} className="w-full h-full outline-none" />
+              {/* Added a key to force canvas remount if file changes significantly */}
+              <canvas key={fileInfo.name} ref={canvasRef} className="w-full h-full outline-none" />
               <div className="absolute top-4 left-4 flex gap-2">
                 <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
                   <Activity className="w-4 h-4 text-primary" />
-                  <span className="text-[10px] font-bold text-white uppercase tracking-wider tracking-widest">Live MRI Stream</span>
+                  <span className="text-[10px] font-bold text-white uppercase tracking-widest">Live MRI Stream</span>
                 </div>
               </div>
               <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/80 backdrop-blur-xl p-1 rounded-xl border border-white/10 z-20">
