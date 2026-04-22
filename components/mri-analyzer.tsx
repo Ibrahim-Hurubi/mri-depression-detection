@@ -121,8 +121,6 @@ export function MRIAnalyzer() {
     setApiError(null); 
     setProgress(0);
     if (nvRef.current) {
-        // Attempt basic cleanup, though Niivue doesn't have a robust destroy method
-        // Re-attaching to a clean canvas is often the safest bet for full reset
         nvRef.current = null; 
     }
   }
@@ -171,7 +169,6 @@ export function MRIAnalyzer() {
     setApiError(null); 
     setProgress(0);
 
-    // Prepare Multimodal FormData
     const formData = new FormData();
     formData.append("file", fileInfo.file);
     formData.append("age", clinicalData.age);
@@ -180,17 +177,10 @@ export function MRIAnalyzer() {
     formData.append("hamd", clinicalData.hamd);
 
     const getApiUrl = () => {
-      // Prioritize Environment Variable
-      if (process.env.NEXT_PUBLIC_API_URL) {
-         return process.env.NEXT_PUBLIC_API_URL;
-      }
-      
-      // Fallback logic
+      if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
       if (typeof window !== "undefined") {
         const hostname = window.location.hostname;
-        if (hostname === "localhost" || hostname === "127.0.0.1") {
-            return "http://localhost:8000/api/analyze";
-        }
+        if (hostname === "localhost" || hostname === "127.0.0.1") return "http://localhost:8000/api/analyze";
       }
       return "https://undepressive-esmeralda-frolicsomely.ngrok-free.dev/api/analyze";
     };
@@ -226,17 +216,16 @@ export function MRIAnalyzer() {
 
       if (data.heatmap && nvRef.current) {
         try {
-          // Optimized Base64 Decoding via Fetch API
           const responseBlob = await fetch(`data:application/octet-stream;base64,${data.heatmap}`).then(res => res.blob());
           const heatmapFile = new File([responseBlob], "heatmap.nii.gz");
           const heatmapUrl = URL.createObjectURL(heatmapFile);
           
           await nvRef.current.addVolumeFromUrl({ 
             url: heatmapUrl, 
-            name: 'heatmap.nii.gz', // File extension added for Niivue parser
+            name: 'heatmap.nii.gz', 
             colormap: 'warm', 
-            opacity: 0.65,          // Increased opacity
-            cal_min: 0.05           // Lowered threshold to ensure visibility
+            opacity: 0.70,          // Optimized opacity for localized hotspots
+            cal_min: 0.45           // High threshold to filter sharpened background noise
           });
           nvRef.current.setSliceType(nvRef.current.sliceTypeMultiplanar);
         } catch (e) { 
@@ -263,7 +252,6 @@ export function MRIAnalyzer() {
     setResult(null); 
     setIsProcessing(false);
     if (nvRef.current) {
-        // Clear references
         nvRef.current = null;
     }
   }
@@ -297,7 +285,6 @@ export function MRIAnalyzer() {
         <>
           <Card className="overflow-hidden border-border/50 shadow-xl">
             <div className="bg-black relative aspect-video w-full flex items-center justify-center overflow-hidden border-b border-border/50">
-              {/* Added a key to force canvas remount if file changes significantly */}
               <canvas key={fileInfo.name} ref={canvasRef} className="w-full h-full outline-none" />
               <div className="absolute top-4 left-4 flex gap-2">
                 <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
