@@ -9,7 +9,7 @@ const steps = [
   {
     icon: ShieldCheck,
     title: "Preprocess",
-    description: "System verifies the NIfTI format and standardizes the volumetric data to 96x96x96.",
+    description: "System verifies the NIfTI format and standardizes the volumetric data to 64x64x64.",
   },
   {
     icon: Cpu,
