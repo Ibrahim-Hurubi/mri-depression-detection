@@ -83,7 +83,7 @@ This is a research and educational project. It is **not** a medical device and m
 
 ## Team
 
-[Fahad Al-Nahi](https://github.com/Skkinner) · **Ibrahim Hurubi** ([LinkedIn](https://www.linkedin.com/in/Ibrahim-Hurubi) · [X](https://x.com/Ibrahim_Hurubi)) · Fahad Al-Mubarak · Abdullah Alshaharani · Ali Muyini
+[Fahad Al-Nahi](https://github.com/Skkinner) · **[Ibrahim Hurubi](https://github.com/Ibrahim-Hurubi)** ([LinkedIn](https://www.linkedin.com/in/Ibrahim-Hurubi) · [X](https://x.com/Ibrahim_Hurubi)) · [Fahad Al-Mubarak](https://github.com/impx6f) · [Abdullah AlShaharani](https://github.com/st1iv) · [Ali Muyini](https://github.com/AliAhmed3140)
 
 Supervised by **Dr. Mohamed Ghouse**, Department of Computer Science, King Khalid University.
 

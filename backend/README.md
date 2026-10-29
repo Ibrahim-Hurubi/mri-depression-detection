@@ -4,7 +4,7 @@ FastAPI inference server for **AI-based Major Depressive Disorder (MDD) detectio
 Part of the [MRI Depression Detection](../) project — this folder holds the model, inference API and Docker setup.
 
 > Graduation project — BSc Computer Science (AI Track), King Khalid University.
-> **Team:** Fahad Al Nahi, Ibrahim Hurubi, Fahad Al-Mubarak, Abdullah Alshaharani, Ali Muyini · **Supervisor:** Dr. Mohamed Ghouse
+> **Team:** [Fahad Al-Nahi](https://github.com/Skkinner), [Ibrahim Hurubi](https://github.com/Ibrahim-Hurubi), [Fahad Al-Mubarak](https://github.com/impx6f), [Abdullah AlShaharani](https://github.com/st1iv), [Ali Muyini](https://github.com/AliAhmed3140) · **Supervisor:** Dr. Mohamed Ghouse
 
 ## Results (independent test set, 217 subjects)
 
