@@ -4,7 +4,15 @@ Web application for **AI-based Major Depressive Disorder (MDD) detection from 3D
 
 > Graduation project — BSc Computer Science (AI Track), King Khalid University.
 
-🌍 **Live demo:** [mri-depression-detection.vercel.app](https://mri-depression-detection.vercel.app)
+🌍 **Live demo:** [mri-depression-detection.vercel.app](https://mri-depression-detection.vercel.app) · 📓 **Training notebook:** [Colab](https://colab.research.google.com/drive/1TPpZR6kNmR0xnFOe9GZkL1iLTMxfgDuK)
+
+## Results
+
+Evaluated on an independent test set of 217 subjects:
+
+| Accuracy | AUC | Sensitivity | Specificity |
+|:---:|:---:|:---:|:---:|
+| **96.8%** | **0.994** | 94.4% | 100% |
 
 ## Features
 
@@ -46,6 +54,8 @@ On localhost the app calls the backend at `http://localhost:8000/api/analyze` (s
 
 This is a research and educational project. It is **not** a medical device and must not be used for clinical diagnosis.
 
-## Author
+## Team
 
-**Ibrahim Hurubi** — [LinkedIn](https://www.linkedin.com/in/Ibrahim-Hurubi) · [X](https://x.com/Ibrahim_Hurubi)
+Fahad Al Nahi · **Ibrahim Hurubi** ([LinkedIn](https://www.linkedin.com/in/Ibrahim-Hurubi) · [X](https://x.com/Ibrahim_Hurubi)) · Fahad Al-Mubarak · Abdullah Alshaharani · Ali Muyini
+
+Supervised by **Dr. Mohamed Ghouse**, Department of Computer Science, King Khalid University.
