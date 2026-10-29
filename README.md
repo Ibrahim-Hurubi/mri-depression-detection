@@ -1,23 +1,51 @@
 # MRI Depression Detection 🧠🔍
 
-## Overview
-This project is a web-based application designed to assist in the detection of depression using Deep Learning analysis of Brain MRI scans. It provides an intuitive interface to upload scans and receive AI-driven diagnostic insights.
+Web application for **AI-based Major Depressive Disorder (MDD) detection from 3D brain MRI scans**, with an explainable heatmap that shows which brain regions drove the prediction.
+
+> Graduation project — BSc Computer Science (AI Track), King Khalid University.
+
+🌍 **Live demo:** [mri-depression-detection.vercel.app](https://mri-depression-detection.vercel.app)
 
 ## Features
-- 🖼️ **MRI Scan Upload**: Easy-to-use interface for uploading brain MRI images safely.
-- 🤖 **AI Analysis**: Powered by deep learning models for accurate depression detection.
-- 📊 **Interactive Dashboard**: Clear visualization of the diagnostic results.
-- ⚡ **Fast & Responsive**: Built with modern web technologies for a seamless experience.
 
-## Tech Stack
-- **Framework**: Next.js 16 (React 19)
-- **Styling**: Tailwind CSS
-- **Deployment**: Vercel
+- 🖼️ **3D MRI upload** — accepts NIfTI scans (`.nii` / `.nii.gz`) together with basic clinical data.
+- 🤖 **Multimodal AI analysis** — a 3D CNN with squeeze-and-excitation attention fused with a clinical-data encoder (sex, age, education, HAMD score).
+- 🔥 **Explainable results** — 3D Grad-CAM heatmap overlaid on the scan in an interactive viewer ([NiiVue](https://github.com/niivue/niivue)).
+- 📊 **Clear dashboard** — diagnosis and confidence score at a glance.
 
-## Live Demo
-🌍 [https://mri-depression-detection-19wb4r5ao-ibrahim-hurubis-projects.vercel.app/](https://mri-depression-detection.vercel.app/)
+## Architecture
 
-## How to Run Locally
-1. Clone the repository:
-   ```bash
-   git clone [https://github.com/Ibrahim-Hurubi/mri-depression-detection.git](https://github.com/Ibrahim-Hurubi/mri-depression-detection.git)
+```
+┌──────────────────────────┐      POST /api/analyze      ┌─────────────────────────────────┐
+│  Next.js frontend        │  ───────────────────────►   │  FastAPI backend (PyTorch)      │
+│  upload · NiiVue viewer  │  ◄───────────────────────   │  3D CNN + SE + clinical fusion  │
+└──────────────────────────┘  diagnosis, confidence,     │  3D Grad-CAM heatmap            │
+                              heatmap (NIfTI)            └─────────────────────────────────┘
+```
+
+The backend (model, inference and Grad-CAM) lives in [mdd-detection-backend](https://github.com/Ibrahim-Hurubi/mdd-detection-backend).
+
+## Tech stack
+
+- **Frontend:** Next.js 16, React 19, TypeScript, Tailwind CSS, shadcn/ui, NiiVue
+- **AI backend:** PyTorch, MONAI, NiBabel, FastAPI
+- **Deployment:** Vercel (frontend), Docker
+
+## Run locally
+
+```bash
+git clone https://github.com/Ibrahim-Hurubi/mri-depression-detection.git
+cd mri-depression-detection
+npm install
+npm run dev        # http://localhost:3000
+```
+
+On localhost the app calls the backend at `http://localhost:8000/api/analyze` (see the backend repo). To point it elsewhere, set `NEXT_PUBLIC_API_URL` to the full endpoint URL.
+
+## ⚠️ Disclaimer
+
+This is a research and educational project. It is **not** a medical device and must not be used for clinical diagnosis.
+
+## Author
+
+**Ibrahim Hurubi** — [LinkedIn](https://www.linkedin.com/in/Ibrahim-Hurubi) · [X](https://x.com/Ibrahim_Hurubi)
