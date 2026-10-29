@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use this project, please cite it as below."
+title: "Deep Learning-Based Depression Detection from Brain MRI"
+abstract: "End-to-end multimodal deep learning system for Major Depressive Disorder (MDD) detection from 3D brain MRI and clinical data, with explainable 3D Grad-CAM heatmaps."
+type: software
+authors:
+  - family-names: Al-Nahi
+    given-names: Fahad
+  - family-names: Hurubi
+    given-names: Ibrahim
+  - family-names: Al-Mubarak
+    given-names: Fahad
+  - family-names: AlShaharani
+    given-names: Abdullah
+  - family-names: Muyini
+    given-names: Ali
+contact:
+  - family-names: Ghouse
+    given-names: Mohamed
+    affiliation: "King Khalid University"
+repository-code: "https://github.com/Ibrahim-Hurubi/mri-depression-detection"
+url: "https://mri-depression-detection.vercel.app"
+license: MIT
+date-released: 2026-10-29
+keywords:
+  - deep-learning
+  - medical-imaging
+  - mri
+  - depression-detection
+  - explainable-ai
