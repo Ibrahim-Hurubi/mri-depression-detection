@@ -4,7 +4,7 @@ End-to-end system for **AI-based Major Depressive Disorder (MDD) detection from 
 
 > Graduation project — BSc Computer Science (AI Track), King Khalid University.
 
-🌍 **Live demo:** [mri-depression-detection.vercel.app](https://mri-depression-detection.vercel.app) · 📓 **Training notebook:** [Colab](https://colab.research.google.com/drive/1TPpZR6kNmR0xnFOe9GZkL1iLTMxfgDuK) · 🖼️ **Poster:** [PDF](docs/MRI_Depression_Detection_Poster.pdf)
+🌍 **Live demo:** [mri-depression-detection.vercel.app](https://mri-depression-detection.vercel.app) · 📓 **Training notebook:** [Colab](https://colab.research.google.com/drive/1TPpZR6kNmR0xnFOe9GZkL1iLTMxfgDuK) · 📄 **Docs:** [Report](docs/MRI_Depression_Detection_Report.pdf) · [Presentation](docs/MRI_Depression_Detection_Presentation.pdf) · [Poster](docs/MRI_Depression_Detection_Poster.pdf)
 
 ## Results
 
@@ -22,7 +22,7 @@ Evaluated on an independent test set of 217 subjects:
 ├── app/, components/, hooks/, lib/   Next.js web app (deployed on Vercel)
 ├── backend/                          FastAPI + PyTorch inference API, trained weights, Dockerfile
 ├── notebooks/                        Full training pipeline (Colab, A100)
-└── docs/                             Poster and figures
+└── docs/                             Project report, presentation, poster and figures
 ```
 
 ## Features
